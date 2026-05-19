@@ -1,27 +1,9 @@
-FROM alpine:latest AS parallel
+FROM browserless/chrome:latest
 
-RUN apk add --no-cache parallel
+USER root
+RUN apt-get update && apt-get install -y socat curl && rm -rf /var/lib/apt/lists/*
+USER blessuser
 
-FROM caddy:latest AS caddy
-
-COPY Caddyfile ./
-
-RUN caddy fmt --overwrite Caddyfile
-
-FROM browserless/chrome:1-chrome-stable
-
-ENV ENABLE_DEBUGGER=false
-ENV DEBUG=browserless:server
-ENV PRINT_NETWORK_INFO=false
-
-COPY --from=caddy /srv/Caddyfile ./
-
-COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
-
-COPY --from=parallel /usr/bin/parallel /usr/bin/parallel
-
-COPY --chmod=755 scripts/* ./
-
-ENTRYPOINT ["/bin/sh"]
-
-CMD ["start.sh"]
+CMD socat TCP-LISTEN:8081,reuseaddr,fork SOCKS5:sazz16014w96:t3vz152mql23@resi.fusionproxy.net:13822 & \
+    socat TCP-LISTEN:8082,reuseaddr,fork SOCKS5:sazz16014w96:t3vz152mql23@resi.fusionproxy.net:14693 & \
+    /usr/local/bin/dumb-init -- /usr/local/bin/browserless
